@@ -2,6 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./backend/docs/swagger');
 
 const alunosRoutes = require('./backend/routes/alunosRoutes');
 const cursosRoutes = require('./backend/routes/cursosRoutes');
@@ -13,6 +15,7 @@ app.use(express.json());
 
 app.use('/alunos', alunosRoutes);
 app.use('/cursos', cursosRoutes);
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/', (req, res) => {
   res.send('API is running');
