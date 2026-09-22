@@ -1,0 +1,60 @@
+{
+  "info": {
+    "name": "Alunos API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Get All Alunos",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3001/alunos"
+      }
+    },
+    {
+      "name": "Get Aluno by ID",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3001/alunos/1"
+      }
+    },
+    {
+      "name": "Add Aluno",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Pedro\",\n  \"apelido\": \"Costa\",\n  \"idCurso\": 2,\n  \"anoCurricular\": 1,\n  \"idade\": 20\n}"
+        },
+        "url": "http://localhost:3001/alunos"
+      }
+    },
+    {
+      "name": "Update Aluno",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nome\": \"Pedro\",\n  \"apelido\": \"Costa\",\n  \"idCurso\": 2,\n  \"anoCurricular\": 2,\n  \"idade\": 21\n}"
+        },
+        "url": "http://localhost:3001/alunos/4"
+      }
+    },
+    {
+      "name": "Delete Aluno",
+      "request": {
+        "method": "DELETE",
+        "url": "http://localhost:3001/alunos/4"
+      }
+    },
+    {
+      "name": "Get Cursos",
+      "request": {
+        "method": "GET",
+        "url": "http://localhost:3001/cursos"
+      }
+    }
+  ]
+}
