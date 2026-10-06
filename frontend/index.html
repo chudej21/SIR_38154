@@ -6,10 +6,15 @@
 <style>
   body { font-family: Arial, sans-serif; max-width: 900px; margin: 40px auto; background: #f4f4f4; }
   h1 { color: #222; }
+  h2 { color: #222; margin: 0 0 10px 0; font-size: 18px; }
   form { background: white; padding: 20px; border-radius: 8px; margin-bottom: 30px; display: grid; gap: 10px; grid-template-columns: 1fr 1fr; }
   form input, form select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
   form button { grid-column: span 2; padding: 10px; background: #2c7be5; color: white; border: none; border-radius: 4px; cursor: pointer; }
   form button:hover { background: #1a5fc4; }
+  form h2 { grid-column: span 2; }
+  #cursoForm { grid-template-columns: 1fr auto; }
+  #cursoForm h2 { grid-column: span 2; }
+  #cursoForm button { grid-column: auto; padding: 8px 16px; }
   table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
   th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }
   th { background: #2c7be5; color: white; }
@@ -23,8 +28,16 @@
 
 <h1>Student Management</h1>
 
+<!-- Form used to create a new course (curso) -->
+<form id="cursoForm">
+  <h2>Add Course</h2>
+  <input type="text" id="nomeDoCurso" placeholder="Course name" required>
+  <button type="submit">Add Course</button>
+</form>
+
 <!-- Form used for both creating and editing a student (aluno) -->
 <form id="alunoForm">
+  <h2>Student</h2>
   <input type="hidden" id="alunoId">
   <input type="text" id="nome" placeholder="First name" required>
   <input type="text" id="apelido" placeholder="Last name" required>
@@ -54,8 +67,10 @@ const API_URL = "https://restapi-backend-67yt.onrender.com/alunos";
 const CURSOS_URL = "https://restapi-backend-67yt.onrender.com/cursos";
 
 let cursosMap = {}; // maps idCurso -> course name, for display in the table
+let maxIdCurso = 0; // highest idCurso so far, used to generate the next one
 
 const form = document.getElementById("alunoForm");
+const cursoForm = document.getElementById("cursoForm");
 const tableBody = document.getElementById("alunosTableBody");
 const idCursoSelect = document.getElementById("idCurso");
 const submitBtn = document.getElementById("submitBtn");
@@ -66,15 +81,40 @@ const alunoIdField = document.getElementById("alunoId");
 async function loadCursos() {
   const res = await fetch(CURSOS_URL);
   const cursos = await res.json();
+  const selected = idCursoSelect.value; // keep current selection after reload
   idCursoSelect.innerHTML = "";
+  cursosMap = {};
+  maxIdCurso = 0;
   cursos.forEach(curso => {
     cursosMap[curso.idCurso] = curso.nomeDoCurso;
+    if (curso.idCurso > maxIdCurso) maxIdCurso = curso.idCurso;
     const option = document.createElement("option");
     option.value = curso.idCurso;
     option.textContent = curso.nomeDoCurso;
     idCursoSelect.appendChild(option);
   });
+  if (selected) idCursoSelect.value = selected;
 }
+
+// Create a new course; idCurso is the next free number
+cursoForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const curso = {
+    idCurso: maxIdCurso + 1,
+    nomeDoCurso: document.getElementById("nomeDoCurso").value
+  };
+
+  await fetch(CURSOS_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(curso)
+  });
+
+  cursoForm.reset();
+  await loadCursos();
+  loadAlunos();
+});
 
 // Load students and render them into the table
 async function loadAlunos() {
