@@ -42,8 +42,8 @@
   <input type="text" id="nome" placeholder="First name" required>
   <input type="text" id="apelido" placeholder="Last name" required>
   <select id="idCurso" required></select>
-  <input type="number" id="anoCurricular" placeholder="Academic year" required>
-  <input type="number" id="idade" placeholder="Age" required>
+  <input type="number" id="anoCurricular" placeholder="Academic year (1-6)" min="1" max="6" step="1" required>
+  <input type="number" id="idade" placeholder="Age (15-100)" min="15" max="100" step="1" required>
   <button type="submit" id="submitBtn">Add Student</button>
   <button type="button" id="cancelEdit">Cancel Edit</button>
 </form>
