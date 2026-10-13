@@ -205,6 +205,18 @@ function resetForm() {
   cancelBtn.style.display = "none";
 }
 
+// Show form validation messages in English, regardless of the browser language
+document.querySelectorAll("input, select").forEach(el => {
+  el.addEventListener("invalid", () => {
+    if (el.validity.valueMissing) {
+      el.setCustomValidity("Please fill out this field.");
+    } else if (el.validity.rangeUnderflow || el.validity.rangeOverflow || el.validity.stepMismatch || el.validity.badInput) {
+      el.setCustomValidity(`Please enter a whole number between ${el.min} and ${el.max}.`);
+    }
+  });
+  el.addEventListener("input", () => el.setCustomValidity(""));
+});
+
 // Initial load: courses first (needed for the dropdown/lookup), then students
 loadCursos().then(loadAlunos);
 </script>
