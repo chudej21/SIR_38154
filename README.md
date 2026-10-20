@@ -1,7 +1,5 @@
 # T_TRAB_RESTAPI
 
-## Atividade Prática #1 - Consumo e Implementação de APIs RESTful
-
 ### Deployment Links
 
 - **Front-end (Vercel):** https://t-trab-restapi.vercel.app/
