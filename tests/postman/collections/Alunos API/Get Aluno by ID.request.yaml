@@ -1,5 +1,5 @@
 $kind: http-request
 description: ""
-url: http://localhost:3001/alunos/1
+url: http://localhost:5000/alunos/6acdf15d90021d23ea63911a
 method: GET
 order: 4372851867899460

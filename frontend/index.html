@@ -35,6 +35,17 @@
   <button type="submit">Add Course</button>
 </form>
 
+<!-- List of courses with delete buttons -->
+<table style="margin-bottom: 30px;">
+  <thead>
+    <tr>
+      <th>Course</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="cursosTableBody"></tbody>
+</table>
+
 <!-- Form used for both creating and editing a student (aluno) -->
 <form id="alunoForm">
   <h2>Student</h2>
@@ -72,6 +83,7 @@ let maxIdCurso = 0; // highest idCurso so far, used to generate the next one
 const form = document.getElementById("alunoForm");
 const cursoForm = document.getElementById("cursoForm");
 const tableBody = document.getElementById("alunosTableBody");
+const cursosTableBody = document.getElementById("cursosTableBody");
 const idCursoSelect = document.getElementById("idCurso");
 const submitBtn = document.getElementById("submitBtn");
 const cancelBtn = document.getElementById("cancelEdit");
@@ -83,17 +95,45 @@ async function loadCursos() {
   const cursos = await res.json();
   const selected = idCursoSelect.value; // keep current selection after reload
   idCursoSelect.innerHTML = "";
+  cursosTableBody.innerHTML = "";
   cursosMap = {};
   maxIdCurso = 0;
   cursos.forEach(curso => {
     cursosMap[curso.idCurso] = curso.nomeDoCurso;
     if (curso.idCurso > maxIdCurso) maxIdCurso = curso.idCurso;
+
     const option = document.createElement("option");
     option.value = curso.idCurso;
     option.textContent = curso.nomeDoCurso;
     idCursoSelect.appendChild(option);
+
+    const row = document.createElement("tr");
+    const nameCell = document.createElement("td");
+    nameCell.textContent = curso.nomeDoCurso;
+    const actionCell = document.createElement("td");
+    const delBtn = document.createElement("button");
+    delBtn.className = "action delete-btn";
+    delBtn.textContent = "Delete";
+    delBtn.addEventListener("click", () => deleteCurso(curso._id));
+    actionCell.appendChild(delBtn);
+    row.appendChild(nameCell);
+    row.appendChild(actionCell);
+    cursosTableBody.appendChild(row);
   });
   if (selected) idCursoSelect.value = selected;
+}
+
+// Delete a course after confirmation (the API refuses if students still use it)
+async function deleteCurso(id) {
+  if (!confirm("Are you sure you want to delete this course?")) return;
+  const res = await fetch(`${CURSOS_URL}/${id}`, { method: "DELETE" });
+  if (!res.ok) {
+    const err = await res.json();
+    alert(err.error || "Could not delete the course.");
+    return;
+  }
+  await loadCursos();
+  loadAlunos();
 }
 
 // Create a new course; idCurso is the next free number

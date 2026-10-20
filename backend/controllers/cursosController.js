@@ -1,4 +1,5 @@
 const Curso = require('../models/Curso');
+const Aluno = require('../models/Aluno');
 
 // GET all courses
 exports.getAll = async (req, res) => {
@@ -60,8 +61,16 @@ exports.update = async (req, res) => {
 // DELETE a course by MongoDB _id
 exports.remove = async (req, res) => {
   try {
-    const curso = await Curso.findByIdAndDelete(req.params.id);
+    const curso = await Curso.findById(req.params.id);
     if (!curso) return res.status(404).json({ error: 'Curso not found' });
+
+    // Do not delete a course that still has students assigned to it
+    const inUse = await Aluno.exists({ idCurso: curso.idCurso });
+    if (inUse) {
+      return res.status(409).json({ error: 'Cannot delete this course: it still has students assigned' });
+    }
+
+    await curso.deleteOne();
     res.json({ message: 'Curso deleted' });
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -1,6 +1,6 @@
 $kind: http-request
 description: ""
-url: http://localhost:3001/alunos/4
+url: http://localhost:5000/alunos/6ab24d2d63ae629899a52d68
 method: PUT
 body:
   type: json

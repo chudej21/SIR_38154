@@ -122,6 +122,8 @@ router.put('/:id', cursosController.update);
  *         description: Course deleted
  *       404:
  *         description: Course not found
+ *       409:
+ *         description: Course still has students assigned
  */
 router.delete('/:id', cursosController.remove);
 

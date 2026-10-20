@@ -1,20 +1,20 @@
 $kind: http-request
 description: ""
-url: http://localhost:3001/alunos
+url: http://localhost:5000/alunos
 method: POST
 body:
   type: json
   content: "{\r
 
-    \  \"nome\": \"Pedro\",\r
+    \  \"nome\": \"Ana\",\r
 
-    \  \"apelido\": \"Costa\",\r
+    \  \"apelido\": \"Ferreira\",\r
 
-    \  \"idCurso\": 2,\r
+    \  \"idCurso\": 1,\r
 
-    \  \"anoCurricular\": 1,\r
+    \  \"anoCurricular\": 3,\r
 
-    \  \"idade\": 20\r
+    \  \"idade\": 22\r
 
     }"
 order: 2845498567776989

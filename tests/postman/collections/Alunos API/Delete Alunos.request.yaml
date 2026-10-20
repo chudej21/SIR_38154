@@ -1,5 +1,5 @@
 $kind: http-request
 description: ""
-url: http://localhost:3001/alunos/4
+url: http://localhost:5000/cursos/6acdf7af24133bca3643d9d8
 method: DELETE
 order: 4093466237426833
