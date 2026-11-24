@@ -4,6 +4,14 @@
   import CourseManager from './lib/CourseManager.svelte';
   import StudentForm from './lib/StudentForm.svelte';
   import StudentTable from './lib/StudentTable.svelte';
+  import SocketChat from './lib/SocketChat.svelte';
+
+  // Tiny hash router: #socket shows the Socket.io page, anything else the student manager
+  let page = $state(location.hash === '#socket' ? 'socket' : 'home');
+  function go(p) {
+    location.hash = p === 'socket' ? 'socket' : '';
+    page = p;
+  }
 
   let alunos = $state([]);
   let cursos = $state([]);
@@ -46,7 +54,12 @@
     loading = false;
   }
 
-  onMount(loadAll);
+  onMount(() => {
+    loadAll();
+    const onHash = () => (page = location.hash === '#socket' ? 'socket' : 'home');
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  });
 
   async function saveAluno(data) {
     saving = true;
@@ -95,8 +108,16 @@
   }
 </script>
 
+{#if page === 'socket'}
+  <SocketChat onback={() => go('home')} />
+{:else}
 <main class="mx-auto max-w-4xl px-4 py-10">
-  <h1 class="mb-6 text-3xl font-bold text-slate-900">Student Management</h1>
+  <div class="mb-6 flex items-center justify-between">
+    <h1 class="text-3xl font-bold text-slate-900">Student Management</h1>
+    <button type="button" onclick={() => go('socket')} class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+      Socket.io
+    </button>
+  </div>
 
   {#if error}
     <div class="mb-6 flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
@@ -120,3 +141,4 @@
     <StudentTable {alunos} {cursoNames} onedit={startEdit} ondelete={removeAluno} />
   {/if}
 </main>
+{/if}
