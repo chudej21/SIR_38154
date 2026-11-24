@@ -30,6 +30,9 @@
 
   let newRoom = $state('');
   let roomError = $state('');
+  let roomNotice = $state('');
+
+  const isMine = (r) => r.owner && username && r.owner.toLowerCase() === username.toLowerCase();
 
   let list; // bound <ul>, used for auto-scroll
 
@@ -121,6 +124,9 @@
       scrollDown();
     });
     socket.on('chat:online', (n) => (online = n));
+    socket.on('room:deleted', ({ room, by }) => {
+      if (room === currentRoom && by !== username) roomNotice = `The group "${room}" was deleted by ${by}.`;
+    });
   }
 
   function send(e) {
@@ -134,6 +140,7 @@
   function switchRoom(name) {
     if (!connected || name === currentRoom) return;
     roomError = '';
+    roomNotice = '';
     socket.emit('room:join', name, (res) => {
       if (!res?.ok) roomError = res?.error ?? 'Could not join the group.';
     });
@@ -144,9 +151,19 @@
     const name = newRoom.trim();
     if (!name || !connected) return;
     roomError = '';
+    roomNotice = '';
     socket.emit('room:create', name, (res) => {
       if (res?.ok) newRoom = '';
       else roomError = res?.error ?? 'Could not create the group.';
+    });
+  }
+
+  function deleteRoom(name) {
+    if (!connected) return;
+    if (!confirm(`Delete the group "${name}"? All its messages will be lost.`)) return;
+    roomError = '';
+    socket.emit('room:delete', name, (res) => {
+      if (!res?.ok) roomError = res?.error ?? 'Could not delete the group.';
     });
   }
 
@@ -213,17 +230,28 @@
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Groups</h2>
         <ul class="mb-4 space-y-1">
           {#each rooms as r}
-            <li>
+            <li class="flex items-center gap-1">
               <button
                 type="button"
                 onclick={() => switchRoom(r.name)}
-                class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm {r.name === currentRoom
+                class="flex min-w-0 flex-1 items-center justify-between rounded-lg px-3 py-2 text-left text-sm {r.name === currentRoom
                   ? 'bg-indigo-600 text-white'
                   : 'text-slate-700 hover:bg-slate-100'}"
               >
                 <span class="truncate"># {r.name}</span>
                 <span class="ml-2 text-xs {r.name === currentRoom ? 'text-indigo-100' : 'text-slate-400'}">{r.online}</span>
               </button>
+              {#if isMine(r)}
+                <button
+                  type="button"
+                  onclick={() => deleteRoom(r.name)}
+                  title="Delete group"
+                  aria-label="Delete group {r.name}"
+                  class="rounded-lg px-2 py-2 text-sm text-slate-400 hover:bg-red-50 hover:text-red-600"
+                >
+                  ✕
+                </button>
+              {/if}
             </li>
           {/each}
         </ul>
@@ -257,6 +285,12 @@
 
         {#if connectError}
           <p class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">{connectError}</p>
+        {/if}
+        {#if roomNotice}
+          <p class="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2 text-sm text-slate-700">
+            {roomNotice}
+            <button type="button" onclick={() => (roomNotice = '')} class="ml-3 text-slate-400 hover:text-slate-600" aria-label="Close">✕</button>
+          </p>
         {/if}
 
         <ul bind:this={list} class="h-96 space-y-2 overflow-y-auto px-4 py-4">

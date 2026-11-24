@@ -4,9 +4,11 @@
 // Client -> server
 //   room:create (name, ack)   create a group and join it
 //   room:join   (name, ack)   switch to another group
+//   room:delete (name, ack)   delete a group (only the user who created it)
 //   chat:message (text)       send a message to the current group
 // Server -> client
-//   room:list    [{ name, online }]
+//   room:list    [{ name, online, owner }]
+//   room:deleted { room, by }
 //   room:joined  { room, history }
 //   chat:message { room, user, text, time } or { room, system: true, text, time }
 //   chat:online  number of connected users
@@ -28,13 +30,13 @@ function attachChat(httpServer, app) {
 
   const rooms = new Map(); // key -> { name, history: [] }
   const names = new Map(); // nickname key -> number of connected users with that name
-  rooms.set(key(DEFAULT_ROOM), { name: DEFAULT_ROOM, history: [] });
+  rooms.set(key(DEFAULT_ROOM), { name: DEFAULT_ROOM, owner: null, history: [] });
 
   const onlineIn = (roomName) => io.sockets.adapter.rooms.get(roomName)?.size ?? 0;
 
   function roomList() {
     return [...rooms.values()]
-      .map((r) => ({ name: r.name, online: onlineIn(r.name) }))
+      .map((r) => ({ name: r.name, online: onlineIn(r.name), owner: r.owner }))
       .sort((a, b) => (a.name === DEFAULT_ROOM ? -1 : b.name === DEFAULT_ROOM ? 1 : a.name.localeCompare(b.name)));
   }
 
@@ -106,13 +108,36 @@ function attachChat(httpServer, app) {
       if (roomName.length < 2) return ack({ ok: false, error: 'Group name must have at least 2 characters.' });
       if (rooms.has(key(roomName))) return ack({ ok: false, error: 'A group with this name already exists.' });
       if (rooms.size >= MAX_ROOMS) return ack({ ok: false, error: 'Too many groups, join an existing one.' });
-      rooms.set(key(roomName), { name: roomName, history: [] });
+      rooms.set(key(roomName), { name: roomName, owner: name, history: [] });
       log(`ROOM CREATED ${roomName} by ${name}`);
       ack(joinRoom(socket, roomName));
     });
 
     socket.on('room:join', (roomName, ack = () => {}) => {
       ack(joinRoom(socket, String(roomName ?? '')));
+    });
+
+    socket.on('room:delete', async (raw, ack = () => {}) => {
+      const r = rooms.get(key(String(raw ?? '')));
+      if (!r) return ack({ ok: false, error: 'This group does not exist anymore.' });
+      if (!r.owner) return ack({ ok: false, error: 'This group cannot be deleted.' });
+      if (key(r.owner) !== key(name)) return ack({ ok: false, error: 'Only the creator of the group can delete it.' });
+
+      rooms.delete(key(r.name));
+      log(`ROOM DELETED ${r.name} by ${name}`);
+      io.emit('room:deleted', { room: r.name, by: name });
+
+      // Move everyone who was in the deleted group back to the default group
+      const members = await io.in(r.name).fetchSockets();
+      for (const m of members) {
+        const s = io.sockets.sockets.get(m.id);
+        if (!s) continue;
+        s.leave(r.name);
+        s.data.room = null;
+        joinRoom(s, DEFAULT_ROOM);
+      }
+      broadcastRooms();
+      ack({ ok: true });
     });
 
     socket.on('chat:message', (text) => {
