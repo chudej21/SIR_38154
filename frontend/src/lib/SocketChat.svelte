@@ -4,7 +4,13 @@
 
   let { onback } = $props();
 
-  const URL = (import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:4000').replace(/\/$/, '');
+  // The chat runs on the same server as the REST API (Render).
+  // Override with VITE_SOCKET_URL (or VITE_API_URL) in frontend/.env.local for local development.
+  const URL = (
+    import.meta.env.VITE_SOCKET_URL ??
+    import.meta.env.VITE_API_URL ??
+    'https://restapi-backend-67yt.onrender.com'
+  ).replace(/\/$/, '');
 
   let username = $state('');
   let draftName = $state('');
@@ -27,7 +33,7 @@
     if (!name) return;
     username = name;
 
-    socket = io(URL, { auth: { username: name } });
+    socket = io(URL, { auth: { username: name }, transports: ['websocket', 'polling'] });
 
     socket.on('connect', () => {
       connected = true;
@@ -36,7 +42,7 @@
     socket.on('disconnect', () => (connected = false));
     socket.on('connect_error', (e) => {
       connected = false;
-      connectError = `Cannot connect to ${URL} (${e.message}). Is the server running?`;
+      connectError = 'Connecting to the chat server… The free Render server may be waking up (it can take up to a minute).';
     });
 
     socket.on('chat:history', (h) => {

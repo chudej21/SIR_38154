@@ -13,6 +13,7 @@ Full-stack app for managing students (`alunos`) and courses (`cursos`).
 | Frontend (Vercel) | https://t-trab-restapi.vercel.app/ |
 | Real API (Render) | https://restapi-backend-67yt.onrender.com |
 | Swagger docs | https://restapi-backend-67yt.onrender.com/api-docs/ |
+| Socket.io chat | https://t-trab-restapi.vercel.app/#socket (server: same Render service as the API) |
 
 > The API runs on Render's free tier and goes to sleep after inactivity. The first request can take up to a minute; the frontend shows a loading message while the server wakes up.
 
@@ -75,7 +76,15 @@ VITE_API_URL=http://localhost:5000
 
 Production build: `npm run build` (output in `frontend/dist`).
 
-### 3. Mock API (optional)
+### 3. Socket.io chat
+
+The chat runs on the same server as the REST API (`backend/socket/chat.js`, attached in `server.js`), so `npm start` starts both.
+The frontend connects to the Render API by default; for local development set `VITE_API_URL=http://localhost:5000` in `frontend/.env.local` (or `VITE_SOCKET_URL` to use a different chat server).
+Optional: set `CLIENT_ORIGIN` (comma separated) on the server to restrict which websites may connect.
+
+`socket-server/` is the original standalone version of the chat (port 4000), kept for reference.
+
+### 4. Mock API (optional)
 
 ```bash
 npm run mock
