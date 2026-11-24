@@ -1,4 +1,5 @@
 // Socket.io chat with groups, attached to the same HTTP server as the REST API.
+// Groups stay until the server restarts (they are kept in memory, like the messages).
 //
 // Client -> server
 //   room:create (name, ack)   create a group and join it
@@ -20,7 +21,7 @@ const stamp = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
 const log = (msg) => console.log(`[${stamp()}] ${msg}`);
 const key = (s) => s.trim().toLowerCase();
 
-function attachChat(httpServer) {
+function attachChat(httpServer, app) {
   // Allowed browser origins, comma separated. Default "*" = anyone.
   const origins = process.env.CLIENT_ORIGIN ? process.env.CLIENT_ORIGIN.split(',') : '*';
   const io = new Server(httpServer, { cors: { origin: origins } });
@@ -56,11 +57,6 @@ function attachChat(httpServer) {
     socket.leave(current);
     socket.data.room = null;
     post(current, { system: true, text: `${socket.data.name} left the group` });
-    // Remove empty groups (except the default one)
-    if (key(current) !== key(DEFAULT_ROOM) && onlineIn(current) === 0) {
-      rooms.delete(key(current));
-      log(`ROOM DELETED ${current} (empty)`);
-    }
   }
 
   function joinRoom(socket, roomName) {
@@ -76,11 +72,23 @@ function attachChat(httpServer) {
     return { ok: true, room: r.name };
   }
 
-  // Reject a connection when the nickname is already taken
+  const isNameTaken = (name) => (names.get(key(name)) ?? 0) >= MAX_SAME_NAME;
+
+  // Lets the frontend check a nickname before joining: GET /chat/name-available?name=Radek
+  if (app) {
+    app.get('/chat/name-available', (req, res) => {
+      const name = String(req.query.name ?? '').trim().slice(0, 20);
+      if (!name) return res.json({ available: false, error: 'Please enter a nickname.' });
+      if (isNameTaken(name)) return res.json({ available: false, error: `The nickname "${name}" is already in the chat.` });
+      res.json({ available: true });
+    });
+  }
+
+  // Reject a connection when the nickname is already taken (also covers two people joining at the same moment)
   io.use((socket, next) => {
     const name = String(socket.handshake.auth?.username || '').trim().slice(0, 20);
     if (!name) return next(new Error('NAME_REQUIRED'));
-    if ((names.get(key(name)) ?? 0) >= MAX_SAME_NAME) return next(new Error('NAME_TAKEN'));
+    if (isNameTaken(name)) return next(new Error('NAME_TAKEN'));
     socket.data.name = name;
     next();
   });

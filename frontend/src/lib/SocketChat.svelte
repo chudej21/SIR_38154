@@ -15,6 +15,8 @@
   let username = $state('');
   let draftName = $state('');
   let nameError = $state('');
+  let nameStatus = $state(''); // '', 'checking', 'free', 'taken'
+  let joining = $state(false);
   let socket = null;
 
   let connected = $state(false);
@@ -36,17 +38,56 @@
     if (list) list.scrollTop = list.scrollHeight;
   }
 
-  function join() {
+  // Ask the server whether a nickname is free. Returns true/false, or null when the server is not reachable.
+  async function checkName(name) {
+    try {
+      const res = await fetch(`${URL}/chat/name-available?name=${encodeURIComponent(name)}`);
+      const data = await res.json();
+      return data.available ? true : (nameError = data.error ?? 'This nickname is not available.', false);
+    } catch {
+      return null;
+    }
+  }
+
+  // Live check while typing (waits until you stop typing for a moment)
+  let checkTimer;
+  function onNameInput() {
+    clearTimeout(checkTimer);
+    nameError = '';
     const name = draftName.trim();
-    if (!name) return;
+    if (!name) return (nameStatus = '');
+    nameStatus = 'checking';
+    checkTimer = setTimeout(async () => {
+      const ok = await checkName(name);
+      if (draftName.trim() !== name) return; // user kept typing
+      nameStatus = ok === true ? 'free' : ok === false ? 'taken' : '';
+    }, 400);
+  }
+
+  async function join() {
+    const name = draftName.trim();
+    if (!name || joining) return;
     nameError = '';
     connectError = '';
+    joining = true;
+
+    // Check the nickname first so a taken name never gets into the chat
+    const ok = await checkName(name);
+    if (ok === false) {
+      nameStatus = 'taken';
+      joining = false;
+      return;
+    }
+    if (ok === null) {
+      connectError = 'Connecting to the chat server… The free Render server may be waking up (it can take up to a minute).';
+    }
 
     socket = io(URL, { auth: { username: name }, transports: ['websocket', 'polling'] });
 
     socket.on('connect', () => {
       username = name;
       connected = true;
+      joining = false;
       connectError = '';
     });
     socket.on('disconnect', () => (connected = false));
@@ -57,6 +98,8 @@
         socket.disconnect();
         socket = null;
         username = '';
+        joining = false;
+        nameStatus = 'taken';
         nameError =
           e.message === 'NAME_TAKEN'
             ? `The nickname "${name}" is already in the chat. Pick another one.`
@@ -133,12 +176,28 @@
         <input
           id="name"
           bind:value={draftName}
+          oninput={onNameInput}
           maxlength="20"
           placeholder="e.g. Radek"
-          class="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+          class="flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none {nameStatus === 'taken'
+            ? 'border-red-400 focus:border-red-500'
+            : nameStatus === 'free'
+              ? 'border-green-400 focus:border-green-500'
+              : 'border-slate-300 focus:border-indigo-500'}"
         />
-        <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">Join</button>
+        <button
+          type="submit"
+          disabled={!draftName.trim() || nameStatus === 'taken' || joining}
+          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {joining ? 'Joining…' : 'Join'}
+        </button>
       </div>
+      {#if nameStatus === 'checking'}
+        <p class="mt-2 text-xs text-slate-500">Checking nickname…</p>
+      {:else if nameStatus === 'free'}
+        <p class="mt-2 text-xs text-green-700">✓ Nickname is available</p>
+      {/if}
       {#if nameError}
         <p class="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{nameError}</p>
       {/if}

@@ -27,7 +27,7 @@ const PORT = process.env.PORT || 5000;
 
 // One HTTP server for both the REST API and the Socket.io chat
 const server = http.createServer(app);
-attachChat(server);
+attachChat(server, app);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {

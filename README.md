@@ -80,7 +80,7 @@ Production build: `npm run build` (output in `frontend/dist`).
 
 The chat runs on the same server as the REST API (`backend/socket/chat.js`, attached in `server.js`), so `npm start` starts both.
 The frontend connects to the Render API by default; for local development set `VITE_API_URL=http://localhost:5000` in `frontend/.env.local` (or `VITE_SOCKET_URL` to use a different chat server).
-Features: groups (create a group or switch between them, each group has its own history and online count, empty groups are removed automatically) and unique nicknames (a nickname that is already online is rejected; change `MAX_SAME_NAME` in `backend/socket/chat.js` to allow more).
+Features: groups (create a group or switch between them, each group has its own history and online count, groups stay until the server restarts) and unique nicknames (the nickname is checked while typing via `GET /chat/name-available?name=…` and again on connect; a nickname that is already online is rejected; change `MAX_SAME_NAME` in `backend/socket/chat.js` to allow more).
 Optional: set `CLIENT_ORIGIN` (comma separated) on the server to restrict which websites may connect.
 
 `socket-server/` is the original standalone version of the chat (port 4000), kept for reference.
