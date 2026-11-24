@@ -80,7 +80,18 @@ Production build: `npm run build` (output in `frontend/dist`).
 
 The chat runs on the same server as the REST API (`backend/socket/chat.js`, attached in `server.js`), so `npm start` starts both.
 The frontend connects to the Render API by default; for local development set `VITE_API_URL=http://localhost:5000` in `frontend/.env.local` (or `VITE_SOCKET_URL` to use a different chat server).
-Features: groups (create a group or switch between them, each group has its own history and online count, groups stay until the server restarts or until their creator deletes them – members are moved back to General) and unique nicknames (the nickname is checked while typing via `GET /chat/name-available?name=…` and again on connect; a nickname that is already online is rejected; change `MAX_SAME_NAME` in `backend/socket/chat.js` to allow more).
+
+Features (modelled on Instagram direct messages):
+
+- **Unique nicknames** – checked while typing (`GET /chat/name-available?name=…`) and again on connect
+- **Groups** – create, switch, delete (only the creator; members are moved back to *General*)
+- **Private chats (DMs)** – click a user under *Active now*; only the two people can see the chat
+- **Typing indicator**, **Seen / Seen by …** under your last message
+- **Reactions** – ❤️ 😂 😮 😢 😡 👍, one per person, double-click a message for ❤️
+- **Reply** to a specific message, **edit** your message (15 minutes), **unsend** your message
+- **Unread counters** per chat and an **online users** list
+
+Everything is kept in memory, so groups, chats and messages disappear when the server restarts (Render's free tier restarts it after inactivity).
 Optional: set `CLIENT_ORIGIN` (comma separated) on the server to restrict which websites may connect.
 
 `socket-server/` is the original standalone version of the chat (port 4000), kept for reference.
